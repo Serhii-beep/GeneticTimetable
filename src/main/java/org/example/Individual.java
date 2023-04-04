@@ -20,7 +20,11 @@ public class Individual {
     public void generateRandomIndividual(List<Classroom> classrooms, List<Professor> professors, List<Group> groups, List<Timeslot> timeslots) {
         Random random = new Random();
         for(Group group : groups) {
-            for(Subject subject : group.getSubjects()) {
+            int subjectsPerGroup = group.getSubjects().size();
+            int availableTimeslots = timeslots.size();
+            int subjectsToAssign = Math.min(subjectsPerGroup, availableTimeslots);
+            for(int i = 0; i < subjectsToAssign; ++i) {
+                Subject subject = group.getSubjects().get(i);
                 List<Professor> availableProfessors = new ArrayList<>();
                 for(Professor professor : professors) {
                     if(professor.getProfessorId() == subject.getProfessorId()) {

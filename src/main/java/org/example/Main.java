@@ -1,5 +1,7 @@
 package org.example;
 
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -7,28 +9,23 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        // Initialize problem data (classrooms, professors, groups, timeslots, and subjects)
         List<Classroom> classrooms = createClassrooms();
         List<Professor> professors = createProfessors();
         List<Group> groups = createGroups();
         List<Timeslot> timeslots = createTimeslots();
 
-        // Genetic algorithm parameters
         int populationSize = 100;
         int maxGenerations = 1000;
         int tournamentSize = 5;
         double crossoverRate = 0.8;
         double mutationRate = 0.2;
 
-        // Create initial population
         Population population = new Population(populationSize, classrooms, professors, groups, timeslots);
 
-        // Iterate through the genetic algorithm steps
         int generation = 1;
         while (generation <= maxGenerations) {
             Population newPopulation = new Population();
 
-            // Selection, crossover, and mutation
             for (int i = 0; i < populationSize; i++) {
                 Individual parent1 = population.selection(tournamentSize);
                 Individual parent2 = population.selection(tournamentSize);
@@ -45,53 +42,73 @@ public class Main {
             }
 
             population = newPopulation;
+            System.out.println("Generation: " + generation);
+            int c = 1;
+            for(Individual i : population.getIndividuals()) {
+                System.out.println("Individual " + c + ", fitness: " + i.getFitness());
+                ++c;
+            }
+            System.out.println("\n==========================================================\n");
             generation++;
         }
 
-        // Find the best timetable solution in the final population
         Individual bestSolution = population.getIndividuals().stream().max((i1, i2) -> Double.compare(i1.getFitness(), i2.getFitness())).orElse(null);
-
+        PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
         if (bestSolution != null) {
-            System.out.println("Best timetable solution found with fitness: " + bestSolution.getFitness());
-            printTimetable(bestSolution);
+            out.println("Best timetable solution found with fitness: " + bestSolution.getFitness());
+            printTimetable(bestSolution, out);
         } else {
-            System.out.println("No timetable solution found.");
+            out.println("No timetable solution found.");
         }
     }
 
-    private static void printTimetable(Individual bestIndividual) {
-        System.out.println("Timetable:");
+    private static void printTimetable(Individual bestIndividual, PrintStream out) {
+        out.println("Timetable:");
+
         List<ScheduledClass> sortedScheduledClasses = new ArrayList<>(bestIndividual.getScheduledClasses());
         sortedScheduledClasses.sort(Comparator.comparing(scheduledClass -> scheduledClass.getTimeslot().getDayOfWeek()));
+
+        out.printf("%-45s %-12s %-20s %-15s %-20s %-20s%n", "Subject", "Type", "Professor", "Group", "Classroom", "Timeslot");
+        out.println("--------------------------------------------------------------------------------------------------------------------------------");
 
         for (ScheduledClass scheduledClass : sortedScheduledClasses) {
             String subjectName = scheduledClass.getSubject().getName();
             String subjectType = scheduledClass.getSubject().isLecture() ? "lecture" : "practice";
             String professorName = scheduledClass.getProfessor().getName();
-            String groupName = "Group " + scheduledClass.getGroup().getGroupId();
-            String classroomName = "Classroom " + scheduledClass.getClassroom().getRoomId();
+            String groupName = "Group " + scheduledClass.getGroup().getName();
+            String classroomName = "Classroom " + scheduledClass.getClassroom().getName();
             String timeslotInfo = scheduledClass.getTimeslot().getDayOfWeek() + " " + scheduledClass.getTimeslot().getStartTime() + "-" + scheduledClass.getTimeslot().getEndTime();
 
-            System.out.println(String.format("%s (%s) - %s - %s - %s - %s", subjectName, subjectType, professorName, groupName, classroomName, timeslotInfo));
+            out.printf("%-45s %-12s %-20s %-15s %-20s %-20s%n", subjectName, subjectType, professorName, groupName, classroomName, timeslotInfo);
         }
     }
 
 
+
     private static List<Classroom> createClassrooms() {
         List<Classroom> classrooms = new ArrayList<>();
-        classrooms.add(new Classroom(1, 30));
-        classrooms.add(new Classroom(2, 25));
-        classrooms.add(new Classroom(3, 40));
-        classrooms.add(new Classroom(4, 20));
+        classrooms.add(new Classroom(1, "306", 100));
+        classrooms.add(new Classroom(2, "43", 70));
+        classrooms.add(new Classroom(3, "306", 40));
+        classrooms.add(new Classroom(4, "221", 40));
+        classrooms.add(new Classroom(5, "01", 100));
+        classrooms.add(new Classroom(6, "203", 32));
+        classrooms.add(new Classroom(7, "202", 32));
         return classrooms;
     }
 
     private static List<Professor> createProfessors() {
         List<Professor> professors = new ArrayList<>();
-        professors.add(new Professor(1, "Alice"));
-        professors.add(new Professor(2, "Bob"));
-        professors.add(new Professor(3, "Charlie"));
-        professors.add(new Professor(4, "David"));
+        professors.add(new Professor(1, "Verhunova I.M."));
+        professors.add(new Professor(2, "Bohuslavskii O.V."));
+        professors.add(new Professor(3, "Panchenko T.V."));
+        professors.add(new Professor(4, "Bohdan I.A."));
+        professors.add(new Professor(5, "Hlybovets M.M."));
+        professors.add(new Professor(6, "Tkachenko O.M."));
+        professors.add(new Professor(7, "Fedorus O.M."));
+        professors.add(new Professor(8, "Kryvolap A.V."));
+        professors.add(new Professor(9, "Shyshatska O.V."));
+        professors.add(new Professor(10, "Nikitchenko M.S."));
         return professors;
     }
 
@@ -100,15 +117,13 @@ public class Main {
         List<Subject> subjects = createSubjects();
 
         List<Subject> group1Subjects = new ArrayList<>();
-        group1Subjects.add(subjects.get(0));
-        group1Subjects.add(subjects.get(1));
-        Group g1 = new Group(1, 25, group1Subjects);
+        group1Subjects.addAll(subjects);
+        Group g1 = new Group(1, 27, "TTP-41", group1Subjects);
         groups.add(g1);
 
         List<Subject> group2Subjects = new ArrayList<>();
-        group2Subjects.add(subjects.get(2));
-        group2Subjects.add(subjects.get(3));
-        Group g2 = new Group(2, 30, group2Subjects);
+        group2Subjects.addAll(subjects);
+        Group g2 = new Group(2, 30, "TTP-42", group2Subjects);
         groups.add(g2);
 
         return groups;
@@ -116,10 +131,16 @@ public class Main {
 
     private static List<Subject> createSubjects() {
         List<Subject> subjects = new ArrayList<>();
-        subjects.add(new Subject(1, "Mathematics", true, 1));
-        subjects.add(new Subject(2, "Physics", false, 2));
-        subjects.add(new Subject(3, "Chemistry", true, 3));
-        subjects.add(new Subject(4, "Biology", false, 4));
+        subjects.add(new Subject(1, "Informatsiini technolohii menedzmentu", true, 1));
+        subjects.add(new Subject(2, "Vybranu rozdily trudovoho prava", true, 2));
+        subjects.add(new Subject(3, "Osnovy pidpryiemnytskoi diialnosti", true, 4));
+        subjects.add(new Subject(4, "Kompozytsiina semantyka SQL-podibnych mov", true, 10));
+        subjects.add(new Subject(5, "Rozrobka biznes-analitychnych system", true, 3));
+        subjects.add(new Subject(6, "Intelektualni systemy", true, 5));
+        subjects.add(new Subject(7, "Intelektualni systemy", false, 7));
+        subjects.add(new Subject(8, "Korektnist prohram ta lohiky prohramuvannia", false, 6));
+        subjects.add(new Subject(9, "Osnovy Data Mining", true, 8));
+        subjects.add(new Subject(10, "Metody specyficatsii prohram", true, 9));
         return subjects;
     }
 
